@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         Role     @default(RECEP)
+  createdAt    DateTime @default(now())
+}
+
+model Patient {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?       @unique
+  phone        String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  appointments Appointment[]
+}
+
+model Professional {
+  id             String         @id @default(cuid())
+  name           String
+  specialty      String
+  createdAt      DateTime       @default(now())
+  availabilities Availability[]
+  appointments   Appointment[]
+}
+
+model Availability {
+  id             String       @id @default(cuid())
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String
+  day            DayOfWeek
+  startTime      String // podrás cambiar a Time si Prisma lo soporta
+  endTime        String // idem
+
+  @@unique([professionalId, day])
+}
+
+model Appointment {
+  id             String          @id @default(cuid())
+  patient        Patient         @relation(fields: [patientId], references: [id])
+  patientId      String
+  professional   Professional    @relation(fields: [professionalId], references: [id])
+  professionalId String
+  startAt        DateTime
+  endAt          DateTime
+  type           AppointmentType
+  createdAt      DateTime        @default(now())
+  invoice        Invoice?
+
+  @@index([professionalId, startAt])
+}
+
+model Invoice {
+  id            String      @id @default(cuid())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  appointmentId String      @unique
+  amount        Float
+  paid          Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+}
+
+enum Role {
+  ADMIN
+  ODONT
+  RECEP
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum AppointmentType {
+  CONSULTATION // Revisión y diagnóstico general
+  CLEANING // Limpieza profiláctica
+  FILLING // Empaste/restauración
+  EXTRACTION // Extracción dental
+  ROOT_CANAL // Tratamiento de conducto (endodoncia)
+  ORTHODONTICS // Ortodoncia (brackets, alineadores)
+  PERIODONTICS // Tratamiento de encías
+  PROSTHODONTICS // Prótesis (coronas, puentes)
+  EMERGENCY // Urgencias dentales
+  WHITENING // Blanqueamiento dental
+}
