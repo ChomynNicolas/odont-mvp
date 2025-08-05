@@ -297,3 +297,50 @@ enum AppointmentType {
   EMERGENCY
   WHITENING
 }
+```
+
+## 📘 Estado Actual del Proyecto
+
+A continuación un **resumen claro y conciso** de todo lo implementado hasta el momento:
+
+### 🚀 Configuración Inicial  
+- Monorepo con **Next.js (App Router) + TypeScript** bajo `src/app`.  
+- **TailwindCSS** y `@shadcn/ui` instalados y configurados.  
+- **Docker Compose** levantando PostgreSQL (dev) y Prisma configurado en `packages/db`.  
+- Estructura de carpetas profesional organizada en:
+  - `src/app/` → rutas, layouts y API Routes  
+  - `src/lib/` → instancia de Prisma, configuración de NextAuth y esquemas Zod  
+  - `src/components/` → UI genéricos  
+  - `src/hooks/`, `src/styles/` y `scripts/`
+
+---
+
+### 🗄️ Modelado de Datos & Migraciones  
+- **Prisma schema** normalizado (3FN) en `packages/db/prisma/schema.prisma` con modelos:
+  - `User`, `Patient`, `Professional`, `Availability`, `Appointment`, `Invoice`  
+  - Enums nativos: `Role`, `DayOfWeek`, `AppointmentType`  
+- Migraciones aplicadas (`npx prisma migrate dev`) y cliente generado (`npx prisma generate`).  
+- **Prisma Studio** listo para inspeccionar datos de desarrollo.
+
+---
+
+### 🔐 Autenticación con NextAuth.js  
+- **NextAuth.js** integrado via App Router en `src/app/api/auth/[...nextauth]/route.ts`.  
+- **CredentialsProvider** con hash de contraseña (bcrypt) y validación en `authorize`.  
+- **Callbacks** para inyectar `role` en JWT y `session.user`.  
+- **Module augmentation** de NextAuth para TypeScript (`src/types/next-auth.d.ts`).  
+- **Middleware** (`src/middleware.ts`) protegiendo rutas bajo `/patients`, `/professionals`, `/schedule`, `/invoices`.  
+- **Providers** Client Component (`src/app/providers.tsx`) para envolver la app con `SessionProvider`.
+
+---
+
+### ✍️ Registro de Usuarios (Endpoint `/api/register`)  
+- **Esquema Zod** (`src/lib/schemas/user.ts`) validando `email`, `password`, `name` y `role`.  
+- **API Route** `POST /api/register` en `src/app/api/register/route.ts`:
+  - Valida input, checa existencia, hashea contraseña y crea usuario.  
+  - Devuelve solo campos públicos (`id`, `email`, `name`, `role`, `createdAt`).  
+  - Códigos HTTP apropiados: **201**, **400**, **422**.  
+- **Pruebas** manuales en Postman o cURL confirmadas.
+
+
+
