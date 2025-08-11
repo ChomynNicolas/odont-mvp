@@ -2,19 +2,16 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import type { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { patientSchema } from "@/lib/validations"
+import { patientSchema, type PatientInput } from "@/lib/schemas/patient"
 import type { Patient } from "@/types"
-
-type PatientFormData = z.infer<typeof patientSchema>
 
 interface PatientFormProps {
   patient?: Patient
-  onSubmit: (data: PatientFormData) => void
+  onSubmit: (data: PatientInput) => void
   onCancel?: () => void
 }
 
@@ -23,16 +20,18 @@ export function PatientForm({ patient, onSubmit, onCancel }: PatientFormProps) {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<PatientFormData>({
+  } = useForm<PatientInput>({
     resolver: zodResolver(patientSchema),
     defaultValues: patient
       ? {
-          name: patient.name,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
           email: patient.email,
           phone: patient.phone,
           address: patient.address || "",
-          dateOfBirth: patient.dateOfBirth || "",
+          dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : "",
           medicalHistory: patient.medicalHistory || "",
+          emergencyContact: patient.emergencyContact || "",
         }
       : undefined,
   })
@@ -41,25 +40,33 @@ export function PatientForm({ patient, onSubmit, onCancel }: PatientFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Full Name *</Label>
-          <Input id="name" {...register("name")} className={errors.name ? "border-red-500" : ""} />
-          {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+          <Label htmlFor="firstName">First Name *</Label>
+          <Input id="firstName" {...register("firstName")} className={errors.firstName ? "border-red-500" : ""} />
+          {errors.firstName && <p className="text-sm text-red-500">{errors.firstName.message}</p>}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email *</Label>
-          <Input id="email" type="email" {...register("email")} className={errors.email ? "border-red-500" : ""} />
-          {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+          <Label htmlFor="lastName">Last Name *</Label>
+          <Input id="lastName" {...register("lastName")} className={errors.lastName ? "border-red-500" : ""} />
+          {errors.lastName && <p className="text-sm text-red-500">{errors.lastName.message}</p>}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
+          <Label htmlFor="email">Email *</Label>
+          <Input id="email" type="email" {...register("email")} className={errors.email ? "border-red-500" : ""} />
+          {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="phone">Phone *</Label>
           <Input id="phone" {...register("phone")} className={errors.phone ? "border-red-500" : ""} />
           {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
         </div>
+      </div>
 
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="dateOfBirth">Date of Birth</Label>
           <Input
@@ -69,6 +76,16 @@ export function PatientForm({ patient, onSubmit, onCancel }: PatientFormProps) {
             className={errors.dateOfBirth ? "border-red-500" : ""}
           />
           {errors.dateOfBirth && <p className="text-sm text-red-500">{errors.dateOfBirth.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="emergencyContact">Emergency Contact</Label>
+          <Input
+            id="emergencyContact"
+            {...register("emergencyContact")}
+            className={errors.emergencyContact ? "border-red-500" : ""}
+          />
+          {errors.emergencyContact && <p className="text-sm text-red-500">{errors.emergencyContact.message}</p>}
         </div>
       </div>
 

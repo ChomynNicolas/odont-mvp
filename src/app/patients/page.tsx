@@ -1,106 +1,108 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalHeader,
-  ModalTitle,
-  ModalTrigger,
-} from "@/components/ui/modal";
-import { Plus, Search, Edit, Trash2, Phone, Mail } from "lucide-react";
-import Link from "next/link";
-import { PatientForm } from "@/components/forms/patient-form";
-import type { Patient } from "@/types";
-
-// Mock data - replace with actual data fetching
-const mockPatients: Patient[] = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john.smith@email.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main St, City, State 12345",
-    dateOfBirth: "1985-06-15",
-  },
-  {
-    id: "2",
-    name: "Sarah Wilson",
-    email: "sarah.wilson@email.com",
-    phone: "+1 (555) 987-6543",
-    address: "456 Oak Ave, City, State 12345",
-    dateOfBirth: "1990-03-22",
-  },
-  {
-    id: "3",
-    name: "Mike Davis",
-    email: "mike.davis@email.com",
-    phone: "+1 (555) 456-7890",
-    address: "789 Pine St, City, State 12345",
-    dateOfBirth: "1978-11-08",
-  },
-];
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Plus, Search, Edit, Trash2, Phone, Mail } from 'lucide-react'
+import Link from "next/link"
+import { PatientForm } from "@/components/forms/patient-form"
+import type { Patient } from "@/types"
 
 export default function PatientsPage() {
-  const [patients, setPatients] = useState<Patient[]>(mockPatients);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetchPatients()
+  }, [])
+
+  const fetchPatients = async () => {
+    try {
+      const response = await fetch("/api/patients")
+      if (response.ok) {
+        const data = await response.json()
+        setPatients(data)
+      }
+    } catch (error) {
+      console.error("Error fetching patients:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredPatients = patients.filter(
     (patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.phone.includes(searchTerm)
-  );
+      patient.phone.includes(searchTerm),
+  )
 
-  const handleAddPatient = (newPatient: Omit<Patient, "id">) => {
-    const patient: Patient = {
-      ...newPatient,
-      id: Date.now().toString(),
-    };
-    setPatients([...patients, patient]);
-    setIsModalOpen(false);
-  };
+  const handleAddPatient = async (data: any) => {
+    try {
+      
+      const response = await fetch("/api/patients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
 
-  const handleDeletePatient = (id: string) => {
-    if (confirm("Are you sure you want to delete this patient?")) {
-      setPatients(patients.filter((p) => p.id !== id));
+      if (response.ok) {
+        const newPatient = await response.json()
+        setPatients([newPatient, ...patients])
+        setIsModalOpen(false)
+      }
+    } catch (error) {
+      console.error("Error adding patient:", error)
     }
-  };
+  }
+
+  const handleDeletePatient = async (id: string) => {
+    if (confirm("Are you sure you want to delete this patient?")) {
+      try {
+        const response = await fetch(`/api/patients/${id}`, {
+          method: "DELETE",
+        })
+
+        if (response.ok) {
+          setPatients(patients.filter((p) => p.id !== id))
+        }
+      } catch (error) {
+        console.error("Error deleting patient:", error)
+      }
+    }
+  }
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-[400px]">Loading...</div>
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Patients</h1>
-        <Modal open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <ModalTrigger asChild>
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               New Patient
             </Button>
-          </ModalTrigger>
-          <ModalContent className="max-w-2xl">
-            <ModalHeader>
-              <ModalTitle>Add New Patient</ModalTitle>
-              <ModalDescription>
-                Enter the patients information below.
-              </ModalDescription>
-            </ModalHeader>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add New Patient</DialogTitle>
+              <DialogDescription>Enter the patients information below.</DialogDescription>
+            </DialogHeader>
             <PatientForm onSubmit={handleAddPatient} />
-          </ModalContent>
-        </Modal>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex items-center gap-4">
@@ -114,8 +116,7 @@ export default function PatientsPage() {
           />
         </div>
         <Badge variant="secondary">
-          {filteredPatients.length} patient
-          {filteredPatients.length !== 1 ? "s" : ""}
+          {filteredPatients.length} patient{filteredPatients.length !== 1 ? "s" : ""}
         </Badge>
       </div>
 
@@ -133,7 +134,9 @@ export default function PatientsPage() {
           <TableBody>
             {filteredPatients.map((patient) => (
               <TableRow key={patient.id}>
-                <TableCell className="font-medium">{patient.name}</TableCell>
+                <TableCell className="font-medium">
+                  {patient.firstName} {patient.lastName}
+                </TableCell>
                 <TableCell>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm">
@@ -147,13 +150,9 @@ export default function PatientsPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {patient.dateOfBirth
-                    ? new Date(patient.dateOfBirth).toLocaleDateString()
-                    : "N/A"}
+                  {patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : "N/A"}
                 </TableCell>
-                <TableCell className="max-w-xs truncate">
-                  {patient.address || "N/A"}
-                </TableCell>
+                <TableCell className="max-w-xs truncate">{patient.address || "N/A"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Button asChild variant="outline" size="sm">
@@ -161,11 +160,7 @@ export default function PatientsPage() {
                         <Edit className="w-4 h-4" />
                       </Link>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeletePatient(patient.id)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => handleDeletePatient(patient.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -182,5 +177,5 @@ export default function PatientsPage() {
         </div>
       )}
     </div>
-  );
+  )
 }
