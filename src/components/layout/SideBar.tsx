@@ -1,15 +1,8 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  Calendar,
-  Home,
-  Users,
-  UserCheck,
-  FileText,
-  Activity,
-} from "lucide-react";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Calendar, Home, Users, UserCheck, FileText, Activity } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -48,10 +41,10 @@ const menuItems = [
     url: "/invoices",
     icon: FileText,
   },
-];
+]
 
 export function SidebarElement() {
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   return (
     <Sidebar>
@@ -81,5 +74,5 @@ export function SidebarElement() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  );
+  )
 }

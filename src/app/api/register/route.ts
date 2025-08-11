@@ -1,45 +1,60 @@
-import { NextResponse } from "next/server";
-import { hash } from "bcrypt";
-import { prisma } from "@/lib/prisma";
-import { RegisterUserSchema } from "@/lib/user";
+import { NextRequest, NextResponse } from "next/server"
+import bcrypt from "bcrypt"
+import { db } from "@/lib/db"
+import { registerSchema } from "@/lib/schemas/auth"
 
-
-export async function POST(request: Request) {
-  // 1. Parse & validate
-  let data;
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    data = RegisterUserSchema.parse(body);
-  } catch (err: any) {
-    const message =
-      err.errors?.map((e: any) => e.message).join(", ") ||
-      "JSON inválido o validación fallida";
-    return NextResponse.json({ error: message }, { status: 422 });
-  }
+    const body = await request.json()
+    const validation = registerSchema.safeParse(body)
 
-  // 2. Check existing user
-  const exists = await prisma.user.findUnique({
-    where: { email: data.email },
-  });
-  if (exists) {
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: validation.error.errors },
+        { status: 400 }
+      )
+    }
+
+    const { email, password, name, role } = validation.data
+
+    // Check if user already exists
+    const existingUser = await db.user.findUnique({
+      where: { email }
+    })
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "User already exists" },
+        { status: 409 }
+      )
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12)
+
+    // Create user
+    const user = await db.user.create({
+      data: {
+        email,
+        passwordHash,
+        name,
+        role,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      }
+    })
+
+    return NextResponse.json(user, { status: 201 })
+  } catch (error) {
+    console.error("Registration error:", error)
     return NextResponse.json(
-      { error: "Ya existe un usuario con ese email" },
-      { status: 400 }
-    );
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
-
-  // 3. Hash password & create user
-  const passwordHash = await hash(data.password, 10);
-  const user = await prisma.user.create({
-    data: {
-      email: data.email,
-      passwordHash,
-      name: data.name,
-      role: data.role,
-    },
-    select: { id: true, email: true, name: true, role: true, createdAt: true },
-  });
-
-  // 4. Return minimal response
-  return NextResponse.json(user, { status: 201 });
 }

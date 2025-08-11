@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod"
 
 export const registerSchema = z
   .object({
@@ -11,22 +11,23 @@ export const registerSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
-  });
+  })
 
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
   rememberMe: z.boolean().optional(),
-});
+})
 
 export const patientSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  firstName: z.string().min(2, "Name must be at least 2 characters"),
+  lastName: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Phone must be at least 10 characters"),
   address: z.string().optional(),
   dateOfBirth: z.string().optional(),
   medicalHistory: z.string().optional(),
-});
+})
 
 export const professionalSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -35,7 +36,7 @@ export const professionalSchema = z.object({
   phone: z.string().min(10, "Phone must be at least 10 characters"),
   daysAvailable: z.array(z.string()).min(1, "Select at least one day"),
   timeSlots: z.array(z.string()).min(1, "Select at least one time slot"),
-});
+})
 
 export const appointmentSchema = z.object({
   patientId: z.string().min(1, "Patient is required"),
@@ -44,4 +45,4 @@ export const appointmentSchema = z.object({
   time: z.string().min(1, "Time is required"),
   duration: z.number().min(15, "Duration must be at least 15 minutes"),
   notes: z.string().optional(),
-});
+})

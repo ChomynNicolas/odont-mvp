@@ -3,44 +3,50 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import type { z } from "zod"
-import Link from "next/link"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader } from "@/components/ui/loader"
-import { Activity, Eye, EyeOff } from "lucide-react"
-import { loginSchema } from "@/lib/validations"
-
-type LoginFormData = z.infer<typeof loginSchema>
+import { Activity, Eye, EyeOff } from 'lucide-react'
+import { loginSchema, type LoginInput } from "@/lib/schemas/auth"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const router = useRouter()
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
+  } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   })
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: LoginInput) => {
     setIsLoading(true)
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      console.log("Login data:", data)
-      // Handle successful login here
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        setError("Invalid email or password")
+      } else {
+        router.push("/")
+        router.refresh()
+      }
     } catch (err) {
-      setError("Invalid email or password. Please try again.")
+      setError("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -100,13 +106,6 @@ export default function LoginPage() {
               {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox id="rememberMe" {...register("rememberMe")} />
-              <Label htmlFor="rememberMe" className="text-sm">
-                Remember me
-              </Label>
-            </div>
-
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -117,15 +116,6 @@ export default function LoginPage() {
                 "Sign in"
               )}
             </Button>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Dont have an account?{" "}
-                <Link href="/register" className="font-medium text-primary hover:underline">
-                  Sign up
-                </Link>
-              </p>
-            </div>
           </form>
         </CardContent>
       </Card>

@@ -24,55 +24,71 @@ model User {
 }
 
 model Patient {
-  id           String        @id @default(cuid())
-  name         String
-  email        String?       @unique
-  phone        String?
-  notes        String?
-  createdAt    DateTime      @default(now())
-  appointments Appointment[]
+  id               String        @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String        @unique
+  phone            String
+  address          String?
+  dateOfBirth      DateTime?
+  medicalHistory   String?
+  emergencyContact String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  appointments     Appointment[]
 }
 
 model Professional {
-  id             String          @id @default(cuid())
-  name           String
-  specialty      String
-  createdAt      DateTime        @default(now())
-  availabilities Availability[]
-  appointments   Appointment[]
+  id            String         @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String         @unique
+  phone         String
+  specialty     String
+  licenseNumber String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  availability  Availability[]
+  appointments  Appointment[]
 }
 
 model Availability {
-  id             String        @id @default(cuid())
-  professional   Professional  @relation(fields: [professionalId], references: [id])
+  id             String       @id @default(cuid())
   professionalId String
-  day            DayOfWeek
-  startTime      String        // podrás cambiar a Time si Prisma lo soporta
-  endTime        String        // idem
-  @@unique([professionalId, day])
+  dayOfWeek      DayOfWeek
+  startTime      String
+  endTime        String
+  isActive       Boolean      @default(true)
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 }
 
 model Appointment {
   id              String          @id @default(cuid())
-  patient         Patient         @relation(fields: [patientId], references: [id])
   patientId       String
-  professional    Professional    @relation(fields: [professionalId], references: [id])
   professionalId  String
-  startAt         DateTime
-  endAt           DateTime
-  type            AppointmentType
+  appointmentType AppointmentType
+  scheduledAt     DateTime
+  duration        Int
+  status          AppointmentStatus @default(SCHEDULED)
+  notes           String?
   createdAt       DateTime        @default(now())
-  invoice         Invoice?
-  @@index([professionalId, startAt])
+  updatedAt       DateTime        @updatedAt
+  patient         Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional    Professional    @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
 }
 
 model Invoice {
-  id             String      @id @default(cuid())
-  appointment    Appointment @relation(fields: [appointmentId], references: [id])
-  appointmentId  String      @unique
-  amount         Float
-  paid           Boolean     @default(false)
-  createdAt      DateTime    @default(now())
+  id            String      @id @default(cuid())
+  appointmentId String
+  amount        Float
+  description   String
+  isPaid        Boolean     @default(false)
+  dueDate       DateTime
+  paidAt        DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
@@ -92,14 +108,23 @@ enum DayOfWeek {
 }
 
 enum AppointmentType {
-  CONSULTATION     // Revisión y diagnóstico general
-  CLEANING         // Limpieza profiláctica
-  FILLING          // Empaste/restauración
-  EXTRACTION       // Extracción dental
-  ROOT_CANAL       // Tratamiento de conducto (endodoncia)
-  ORTHODONTICS     // Ortodoncia (brackets, alineadores)
-  PERIODONTICS     // Tratamiento de encías
-  PROSTHODONTICS   // Prótesis (coronas, puentes)
-  EMERGENCY        // Urgencias dentales
-  WHITENING        // Blanqueamiento dental
+  CONSULTATION
+  CLEANING
+  FILLING
+  EXTRACTION
+  ROOT_CANAL
+  ORTHODONTICS
+  PERIODONTICS
+  PROSTHODONTICS
+  EMERGENCY
+  WHITENING
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
 }
